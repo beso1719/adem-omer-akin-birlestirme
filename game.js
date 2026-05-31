@@ -84,22 +84,24 @@ const floaters = [];    // uçan puan yazıları
 let combo = 0;
 let comboTimer = 0;
 
-// ---- Basit ses (Web Audio) ----
-let audioCtx = null;
+// ---- Birleşme sesi (ses dosyası, üst üste çalabilmek için havuz) ----
 let muted = localStorage.getItem("meyve_muted") === "1";
+const MERGE_SRC = "merge.ogg";
+const mergePool = [];
+const MERGE_POOL_SIZE = 6;
+for (let i = 0; i < MERGE_POOL_SIZE; i++) {
+  const a = new Audio(MERGE_SRC);
+  a.preload = "auto";
+  mergePool.push(a);
+}
+let mergeIdx = 0;
 function pop(tier) {
   if (muted) return;
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = "sine";
-    o.frequency.value = 320 + tier * 55;   // büyük top → tiz değil, hoş bir yükseliş
-    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(); o.stop(audioCtx.currentTime + 0.2);
+    const a = mergePool[mergeIdx];
+    mergeIdx = (mergeIdx + 1) % MERGE_POOL_SIZE;
+    a.currentTime = 0;
+    a.play().catch(() => {});
   } catch (e) {}
 }
 
